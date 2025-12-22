@@ -1,0 +1,21 @@
+{
+  "name": "Kur'an-ı Kerim Player",
+  "short_name": "KuranPlayer",
+  "description": "Sesli Kur'an-ı Kerim Dinleme ve Ezber Uygulaması",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eef2f3",
+  "theme_color": "#27ae60",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kur'an-ı Kerim Player</title>
+    <script src="kurandata.js"></script>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#27ae60">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <script>
+    // Service Worker Kaydı
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Kayıtlı', reg))
+            .catch(err => console.log('SW Hatası', err));
+        });
+    }
+    </script>
+    
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #27ae60;
+            --bg: #eef2f3;
+            --card-bg: #ffffff;
+            --item-h: 60px; /* Daha kararlı hesaplama için 60px yapıldı */
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--primary);
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        @media (min-width: 481px) {
+            .container { height: 850px; border-radius: 30px; margin: 20px; }
+        }
+
+        .header {
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* DRUM PICKER - MIKNATIS EFEKTİ DÜZENLEMESİ */
+        .picker-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+            position: relative;
+        }
+
+        .drum-wrapper {
+            position: relative;
+            height: 300px; /* 5 öğe görünür (5 * 60) */
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .drum-list {
+            height: 100%;
+            overflow-y: scroll;
+            /* Mıknatıs Efekti */
+            scroll-snap-type: y mandatory;
+            padding: 120px 0; /* (300 - 60) / 2 -> Tam merkezleme */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .drum-list::-webkit-scrollbar { display: none; }
+        
+        .drum-item {
+            height: var(--item-h);
+            line-height: var(--item-h);
+            text-align: center;
+            font-size: 1.2rem;
+            color: #bdc3c7;
+            transition: 0.3s;
+            /* Her öğe için mıknatıs noktası */
+            scroll-snap-align: center;
+            scroll-snap-stop: always;
+        }
+        
+        .drum-item.active {
+            color: var(--accent);
+            font-weight: 800;
+            transform: scale(1.2);
+        }
+
+        .selection-mask {
+            position: absolute;
+            top: 120px; /* drum-list padding ile aynı */
+            left: 10%;
+            right: 10%;
+            height: var(--item-h);
+            border-top: 2px solid var(--accent);
+            border-bottom: 2px solid var(--accent);
+            background: rgba(39, 174, 96, 0.05);
+            pointer-events: none;
+            border-radius: 8px;
+        }
+
+        /* KONTROL PANELİ */
+        .controls-panel {
+            background: white;
+            padding: 20px;
+            border-top: 1px solid #eee;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.02);
+        }
+
+        .status-box { height: 50px; text-align: center; margin-bottom: 15px; font-size: 0.95rem; }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+        }
+        .slider-row input { flex: 1; accent-color: var(--accent); cursor: pointer; }
+        .val-tag { min-width: 45px; font-weight: bold; text-align: right; }
+
+        .inputs-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .input-item { background: #f1f3f5; padding: 8px; border-radius: 12px; text-align: center; }
+        .input-item label { font-size: 0.65rem; color: #7f8c8d; display: block; margin-bottom: 3px; }
+        .input-item input { width: 100%; border: none; background: transparent; text-align: center; font-weight: bold; font-size: 1rem; outline: none; }
+
+        .btn-group { display: flex; gap: 10px; }
+        .btn { border: none; border-radius: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-play { background: var(--accent); color: white; flex: 2; height: 60px; font-size: 1.1rem; }
+        .btn-nav { background: #e9ecef; color: var(--primary); flex: 1; height: 60px; font-size: 1.2rem; }
+        .btn:active { transform: scale(0.96); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">📖 Kur'an-ı Kerim Player</div>
+
+    <div class="picker-section">
+        <div class="drum-wrapper">
+            <div class="selection-mask"></div>
+            <div id="sureDrum" class="drum-list"></div>
+        </div>
+    </div>
+
+    <div class="controls-panel">
+        <div id="status" class="status-box">Hazır</div>
+
+        <div class="slider-group">
+            <div class="slider-row">
+                <span>Hız:</span>
+                <input type="range" id="speedR" min="0.5" max="2" step="0.1" value="1">
+                <span class="val-tag" id="speedV">1.0x</span>
+            </div>
+            <div class="slider-row">
+                <span>Bekleme:</span>
+                <input type="range" id="waitR" min="0" max="15" step="1" value="0">
+                <span class="val-tag" id="waitV">0sn</span>
+            </div>
+        </div>
+
+        <div class="inputs-row">
+            <div class="input-item">
+                <label>BAŞLANGIÇ</label>
+                <input type="number" id="startA" value="1">
+            </div>
+            <div class="input-item">
+                <label>BİTİŞ</label>
+                <input type="number" id="endA" value="1">
+            </div>
+            <div class="input-item">
+                <label>TEKRAR</label>
+                <input type="number" id="repA" value="1">
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-nav" onclick="nav(-1)">⬅</button>
+            <button class="btn btn-play" id="pBtn" onclick="toggle()">OYNATMAYI BAŞLAT</button>
+            <button class="btn btn-nav" onclick="nav(1)">➡</button>
+        </div>
+    </div>
+</div>
+
+<audio id="aud"></audio>
+
+<script>
+    const drum = document.getElementById('sureDrum'),
+          aud = document.getElementById('aud'),
+          pBtn = document.getElementById('pBtn'),
+          status = document.getElementById('status'),
+          speedR = document.getElementById('speedR'),
+          speedV = document.getElementById('speedV'),
+          waitR = document.getElementById('waitR'),
+          waitV = document.getElementById('waitV');
+
+    let sIdx = 0, cA = 1, tA = 1, rM = 1, rL = 0, playing = false, timer = null;
+    const ITEM_H = 60; // CSS'teki --item-h ile aynı olmalı
+
+    function init() {
+        if (typeof Sureler === 'undefined') { status.innerText = "kurandata.js eksik!"; return; }
+        
+        Sureler.forEach((s, i) => {
+            const d = document.createElement('div');
+            d.className = 'drum-item';
+            d.innerText = s[0];
+            drum.appendChild(d);
+        });
+
+        drum.addEventListener('scroll', () => {
+            const i = Math.round(drum.scrollTop / ITEM_H);
+            if (i !== sIdx && i >= 0 && i < Sureler.length) {
+                sIdx = i;
+                updateUI();
+                document.getElementById('endA').value = Sureler[sIdx][3];
+            }
+        });
+        
+        // İlk yüklemede UI'ı güncelle
+        setTimeout(updateUI, 100);
+    }
+
+    function updateUI() {
+        Array.from(drum.children).forEach((it, i) => {
+            it.classList.toggle('active', i === sIdx);
+        });
+    }
+
+    speedR.oninput = () => { 
+        aud.playbackRate = speedR.value; 
+        speedV.innerText = parseFloat(speedR.value).toFixed(1) + "x"; 
+    };
+    
+    waitR.oninput = () => { 
+        waitV.innerText = waitR.value + "sn"; 
+    };
+
+    function toggle() {
+        if (!playing) {
+            cA = parseInt(document.getElementById('startA').value);
+            tA = parseInt(document.getElementById('endA').value);
+            rM = parseInt(document.getElementById('repA').value);
+            rL = rM;
+            playing = true;
+            pBtn.innerText = "DURDUR";
+            pBtn.style.background = "#e67e22";
+            play();
+        } else {
+            stopPlay();
+        }
+    }
+
+    function stopPlay() {
+        aud.pause();
+        playing = false;
+        clearTimeout(timer);
+        pBtn.innerText = "BAŞLAT";
+        pBtn.style.background = "var(--accent)";
+        status.innerText = "Durduruldu";
+    }
+
+    function play() {
+        if (!playing) return;
+        if (cA > tA) {
+            status.innerHTML = "✨ <b>Tamamlandı</b>";
+            playing = false;
+            pBtn.innerText = "BAŞLAT";
+            pBtn.style.background = "var(--accent)";
+            return;
+        }
+
+        const sNum = String(Sureler[sIdx][1]).padStart(3, '0');
+        const aNum = String(cA).padStart(3, '0');
+        aud.src = `https://tanzil.net/res/audio/afasy/${sNum}${aNum}.mp3`;
+        aud.playbackRate = speedR.value;
+        
+        aud.play().catch(e => {
+            status.innerText = "Hata: Ses yüklenemedi.";
+            stopPlay();
+        });
+        
+        updateStatusText();
+    }
+
+    function updateStatusText() {
+        status.innerHTML = `<b>${Sureler[sIdx][0]}</b><br>Ayet: ${cA}/${tA} | Tekrar: ${rM - rL + 1}/${rM}`;
+    }
+
+    aud.onended = () => {
+        rL--;
+        if (rL > 0) {
+            startWait();
+        } else {
+            rL = rM;
+            cA++;
+            startWait();
+        }
+    };
+
+    function startWait() {
+        if (cA > tA) { play(); return; }
+        const waitTime = parseInt(waitR.value) * 1000;
+        if (waitTime > 0) {
+            status.innerHTML += "<br><small style='color:orange'>Bekleniyor...</small>";
+            timer = setTimeout(play, waitTime);
+        } else {
+            play();
+        }
+    }
+
+    function nav(step) {
+        clearTimeout(timer);
+        cA += step;
+        if (cA < 1) cA = 1;
+        rL = rM;
+        if(playing) play();
+        else updateStatusText();
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
