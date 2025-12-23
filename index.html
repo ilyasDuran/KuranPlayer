@@ -3,23 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kur'an-ı Kerim Player</title>
-    <script src="kurandata.js"></script>
-
+    <title>Kur'an-ı Kerim Player Pro</title>
+    
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#27ae60">
     <link rel="apple-touch-icon" href="icon-192.png">
-
-    <script>
-    // Service Worker Kaydı
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('SW Kayıtlı', reg))
-            .catch(err => console.log('SW Hatası', err));
-        });
-    }
-    </script>
+    
+    <script src="kurandata.js"></script>
     
     <style>
         :root {
@@ -27,7 +17,19 @@
             --accent: #27ae60;
             --bg: #eef2f3;
             --card-bg: #ffffff;
-            --item-h: 60px; /* Daha kararlı hesaplama için 60px yapıldı */
+            --item-h: 60px; 
+            --wrapper-h: 300px;
+            --text: #2c3e50;
+            --input-bg: #f1f3f5;
+        }
+
+        /* Karanlık Tema Renkleri */
+        [data-theme="dark"] {
+            --primary: #ecf0f1;
+            --bg: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text: #f5f5f5;
+            --input-bg: #3d3d3d;
         }
         
         body {
@@ -38,7 +40,8 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            color: var(--primary);
+            color: var(--text);
+            transition: background 0.3s;
         }
 
         .container {
@@ -48,7 +51,7 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
             overflow: hidden;
             position: relative;
         }
@@ -59,24 +62,34 @@
 
         .header {
             padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
         }
 
-        /* DRUM PICKER - MIKNATIS EFEKTİ DÜZENLEMESİ */
+        /* Tema Değiştirici */
+        #theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--accent);
+        }
+
+        /* Picker */
         .picker-section {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #fafafa;
+            background: rgba(0,0,0,0.02);
             position: relative;
         }
 
         .drum-wrapper {
             position: relative;
-            height: 300px; /* 5 öğe görünür (5 * 60) */
+            height: var(--wrapper-h); 
             width: 100%;
             overflow: hidden;
         }
@@ -84,11 +97,11 @@
         .drum-list {
             height: 100%;
             overflow-y: scroll;
-            /* Mıknatıs Efekti */
             scroll-snap-type: y mandatory;
-            padding: 120px 0; /* (300 - 60) / 2 -> Tam merkezleme */
+            padding-top: 120px;
+            padding-bottom: 120px;
+            box-sizing: border-box;
             scrollbar-width: none;
-            -ms-overflow-style: none;
         }
         .drum-list::-webkit-scrollbar { display: none; }
         
@@ -97,9 +110,7 @@
             line-height: var(--item-h);
             text-align: center;
             font-size: 1.2rem;
-            color: #bdc3c7;
-            transition: 0.3s;
-            /* Her öğe için mıknatıs noktası */
+            color: #888;
             scroll-snap-align: center;
             scroll-snap-stop: always;
         }
@@ -112,26 +123,24 @@
 
         .selection-mask {
             position: absolute;
-            top: 120px; /* drum-list padding ile aynı */
-            left: 10%;
-            right: 10%;
+            top: 120px; 
+            left: 10%; right: 10%;
             height: var(--item-h);
             border-top: 2px solid var(--accent);
             border-bottom: 2px solid var(--accent);
-            background: rgba(39, 174, 96, 0.05);
+            background: rgba(39, 174, 96, 0.1);
             pointer-events: none;
             border-radius: 8px;
         }
 
-        /* KONTROL PANELİ */
+        /* Kontroller */
         .controls-panel {
-            background: white;
+            background: var(--card-bg);
             padding: 20px;
-            border-top: 1px solid #eee;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.02);
+            border-top: 1px solid rgba(0,0,0,0.1);
         }
 
-        .status-box { height: 50px; text-align: center; margin-bottom: 15px; font-size: 0.95rem; }
+        .status-box { height: 60px; text-align: center; margin-bottom: 15px; font-size: 0.95rem; }
 
         .slider-row {
             display: flex;
@@ -140,8 +149,7 @@
             margin-bottom: 12px;
             font-size: 0.8rem;
         }
-        .slider-row input { flex: 1; accent-color: var(--accent); cursor: pointer; }
-        .val-tag { min-width: 45px; font-weight: bold; text-align: right; }
+        .slider-row input { flex: 1; accent-color: var(--accent); }
 
         .inputs-row {
             display: grid;
@@ -149,22 +157,41 @@
             gap: 10px;
             margin-bottom: 20px;
         }
-        .input-item { background: #f1f3f5; padding: 8px; border-radius: 12px; text-align: center; }
-        .input-item label { font-size: 0.65rem; color: #7f8c8d; display: block; margin-bottom: 3px; }
-        .input-item input { width: 100%; border: none; background: transparent; text-align: center; font-weight: bold; font-size: 1rem; outline: none; }
+        .input-item { background: var(--input-bg); padding: 8px; border-radius: 12px; text-align: center; }
+        .input-item label { font-size: 0.65rem; opacity: 0.7; display: block; margin-bottom: 3px; }
+        .input-item input { width: 100%; border: none; background: transparent; text-align: center; color: var(--text); font-weight: bold; font-size: 1rem; outline: none; }
 
         .btn-group { display: flex; gap: 10px; }
         .btn { border: none; border-radius: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-play { background: var(--accent); color: white; flex: 2; height: 60px; font-size: 1.1rem; }
-        .btn-nav { background: #e9ecef; color: var(--primary); flex: 1; height: 60px; font-size: 1.2rem; }
-        .btn:active { transform: scale(0.96); }
+        .btn-nav { background: var(--input-bg); color: var(--text); flex: 1; height: 60px; font-size: 1.3rem; }
 
+        /* Toast Message */
+        #toast {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: none;
+            z-index: 100;
+            white-space: nowrap;
+        }
     </style>
 </head>
-<body>
+<body data-theme="light">
 
 <div class="container">
-    <div class="header">📖 Kur'an-ı Kerim Player</div>
+    <div id="toast">Bağlantı hatası! Lütfen internetinizi kontrol edin.</div>
+    
+    <div class="header">
+        <span>📖 Kur'an Player</span>
+        <button id="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
 
     <div class="picker-section">
         <div class="drum-wrapper">
@@ -180,89 +207,124 @@
             <div class="slider-row">
                 <span>Hız:</span>
                 <input type="range" id="speedR" min="0.5" max="2" step="0.1" value="1">
-                <span class="val-tag" id="speedV">1.0x</span>
+                <span id="speedV">1.0x</span>
             </div>
             <div class="slider-row">
                 <span>Bekleme:</span>
                 <input type="range" id="waitR" min="0" max="15" step="1" value="0">
-                <span class="val-tag" id="waitV">0sn</span>
+                <span id="waitV">0sn</span>
             </div>
         </div>
 
         <div class="inputs-row">
-            <div class="input-item">
-                <label>BAŞLANGIÇ</label>
-                <input type="number" id="startA" value="1">
-            </div>
-            <div class="input-item">
-                <label>BİTİŞ</label>
-                <input type="number" id="endA" value="1">
-            </div>
-            <div class="input-item">
-                <label>TEKRAR</label>
-                <input type="number" id="repA" value="1">
-            </div>
+            <div class="input-item"><label>BAŞLA</label><input type="number" id="startA" value="1"></div>
+            <div class="input-item"><label>BİTİŞ</label><input type="number" id="endA" value="1"></div>
+            <div class="input-item"><label>TEKRAR</label><input type="number" id="repA" value="1"></div>
         </div>
 
         <div class="btn-group">
             <button class="btn btn-nav" onclick="nav(-1)">⬅</button>
-            <button class="btn btn-play" id="pBtn" onclick="toggle()">OYNATMAYI BAŞLAT</button>
+            <button class="btn btn-play" id="pBtn" onclick="toggle()">BAŞLAT</button>
             <button class="btn btn-nav" onclick="nav(1)">➡</button>
         </div>
     </div>
 </div>
 
-<audio id="aud"></audio>
+<audio id="audMain"></audio>
+<audio id="audPreload" preload="auto"></audio>
 
 <script>
     const drum = document.getElementById('sureDrum'),
-          aud = document.getElementById('aud'),
+          audMain = document.getElementById('audMain'),
+          audPreload = document.getElementById('audPreload'),
           pBtn = document.getElementById('pBtn'),
           status = document.getElementById('status'),
           speedR = document.getElementById('speedR'),
-          speedV = document.getElementById('speedV'),
-          waitR = document.getElementById('waitR'),
-          waitV = document.getElementById('waitV');
+          waitR = document.getElementById('waitR');
 
     let sIdx = 0, cA = 1, tA = 1, rM = 1, rL = 0, playing = false, timer = null;
-    const ITEM_H = 60; // CSS'teki --item-h ile aynı olmalı
+    const ITEM_H = 60;
 
+    // 1. Tema Yönetimi
+    function toggleTheme() {
+        const body = document.body;
+        const isDark = body.getAttribute('data-theme') === 'dark';
+        body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        document.getElementById('theme-toggle').innerText = isDark ? '🌙' : '☀️';
+    }
+
+    // 2. Hata Gösterimi (Toast)
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    // 3. Başlatma ve Picker
     function init() {
-        if (typeof Sureler === 'undefined') { status.innerText = "kurandata.js eksik!"; return; }
-        
-        Sureler.forEach((s, i) => {
+        if (typeof Sureler === 'undefined') return;
+        Sureler.forEach(s => {
             const d = document.createElement('div');
             d.className = 'drum-item';
             d.innerText = s[0];
             drum.appendChild(d);
         });
-
         drum.addEventListener('scroll', () => {
             const i = Math.round(drum.scrollTop / ITEM_H);
             if (i !== sIdx && i >= 0 && i < Sureler.length) {
                 sIdx = i;
-                updateUI();
+                Array.from(drum.children).forEach((it, idx) => it.classList.toggle('active', idx === sIdx));
                 document.getElementById('endA').value = Sureler[sIdx][3];
             }
         });
+    }
+
+    // 4. Oynatma ve Preload Mantığı
+    function getAudioUrl(sura, ayah) {
+        const s = String(Sureler[sura][1]).padStart(3, '0');
+        const a = String(ayah).padStart(3, '0');
+        return `https://tanzil.net/res/audio/afasy/${s}${a}.mp3`;
+    }
+
+    function play() {
+        if (!playing) return;
+        if (cA > tA) {
+            status.innerHTML = "✨ <b>Tamamlandı</b>";
+            stopPlay();
+            return;
+        }
+
+        // Ana audioyu başlat
+        audMain.src = getAudioUrl(sIdx, cA);
+        audMain.playbackRate = speedR.value;
         
-        // İlk yüklemede UI'ı güncelle
-        setTimeout(updateUI, 100);
-    }
-
-    function updateUI() {
-        Array.from(drum.children).forEach((it, i) => {
-            it.classList.toggle('active', i === sIdx);
+        audMain.play().then(() => {
+            updateMediaSession();
+            // BİR SONRAKİ AYETİ ÖNCEDEN YÜKLE (Preload)
+            let nextA = (rL > 1) ? cA : cA + 1;
+            if (nextA <= tA) {
+                audPreload.src = getAudioUrl(sIdx, nextA);
+            }
+        }).catch(() => {
+            showToast("Bağlantı hatası! Ses yüklenemedi.");
+            stopPlay();
         });
+        
+        status.innerHTML = `<b>${Sureler[sIdx][0]}</b><br>Ayet: ${cA}/${tA} | Tekrar: ${rM - rL + 1}/${rM}`;
     }
 
-    speedR.oninput = () => { 
-        aud.playbackRate = speedR.value; 
-        speedV.innerText = parseFloat(speedR.value).toFixed(1) + "x"; 
-    };
-    
-    waitR.oninput = () => { 
-        waitV.innerText = waitR.value + "sn"; 
+    audMain.onended = () => {
+        rL--;
+        if (rL <= 0) { rL = rM; cA++; }
+        
+        const waitTime = parseInt(waitR.value) * 1000;
+        if (waitTime > 0 && cA <= tA) {
+            status.innerHTML += "<br><small>Bekleniyor...</small>";
+            timer = setTimeout(play, waitTime);
+        } else {
+            play();
+        }
     };
 
     function toggle() {
@@ -275,80 +337,39 @@
             pBtn.innerText = "DURDUR";
             pBtn.style.background = "#e67e22";
             play();
-        } else {
-            stopPlay();
-        }
+        } else { stopPlay(); }
     }
 
     function stopPlay() {
-        aud.pause();
+        audMain.pause();
         playing = false;
         clearTimeout(timer);
         pBtn.innerText = "BAŞLAT";
         pBtn.style.background = "var(--accent)";
-        status.innerText = "Durduruldu";
-    }
-
-    function play() {
-        if (!playing) return;
-        if (cA > tA) {
-            status.innerHTML = "✨ <b>Tamamlandı</b>";
-            playing = false;
-            pBtn.innerText = "BAŞLAT";
-            pBtn.style.background = "var(--accent)";
-            return;
-        }
-
-        const sNum = String(Sureler[sIdx][1]).padStart(3, '0');
-        const aNum = String(cA).padStart(3, '0');
-        aud.src = `https://tanzil.net/res/audio/afasy/${sNum}${aNum}.mp3`;
-        aud.playbackRate = speedR.value;
-        
-        aud.play().catch(e => {
-            status.innerText = "Hata: Ses yüklenemedi.";
-            stopPlay();
-        });
-        
-        updateStatusText();
-    }
-
-    function updateStatusText() {
-        status.innerHTML = `<b>${Sureler[sIdx][0]}</b><br>Ayet: ${cA}/${tA} | Tekrar: ${rM - rL + 1}/${rM}`;
-    }
-
-    aud.onended = () => {
-        rL--;
-        if (rL > 0) {
-            startWait();
-        } else {
-            rL = rM;
-            cA++;
-            startWait();
-        }
-    };
-
-    function startWait() {
-        if (cA > tA) { play(); return; }
-        const waitTime = parseInt(waitR.value) * 1000;
-        if (waitTime > 0) {
-            status.innerHTML += "<br><small style='color:orange'>Bekleniyor...</small>";
-            timer = setTimeout(play, waitTime);
-        } else {
-            play();
-        }
     }
 
     function nav(step) {
         clearTimeout(timer);
-        cA += step;
-        if (cA < 1) cA = 1;
+        cA += step; if (cA < 1) cA = 1;
         rL = rM;
-        if(playing) play();
-        else updateStatusText();
+        if (playing) play();
     }
+
+    function updateMediaSession() {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: Sureler[sIdx][0], artist: `Ayet: ${cA} / ${tA}`,
+                artwork: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }]
+            });
+            navigator.mediaSession.setActionHandler('previoustrack', () => nav(-1));
+            navigator.mediaSession.setActionHandler('nexttrack', () => nav(1));
+        }
+    }
+
+    speedR.oninput = () => document.getElementById('speedV').innerText = parseFloat(speedR.value).toFixed(1) + "x";
+    waitR.oninput = () => document.getElementById('waitV').innerText = waitR.value + "sn";
 
     window.onload = init;
 </script>
-
 </body>
 </html>
