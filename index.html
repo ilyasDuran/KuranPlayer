@@ -235,7 +235,6 @@
             drum.appendChild(d);
         });
 
-        // TEMA YÜKLEME VE SEMBOLÜ DÜZELTME
         const savedTheme = localStorage.getItem('quran_theme') || 'light';
         document.body.setAttribute('data-theme', savedTheme);
         document.getElementById('theme-toggle').innerText = savedTheme === 'dark' ? '☀️' : '🌙';
@@ -244,7 +243,6 @@
             const i = Math.round(drum.scrollTop / ITEM_H);
             if (i !== sIdx && i >= 0 && i < Sureler.length) {
                 sIdx = i;
-                // Sure değiştiğinde değerleri resetle (Sadece kaydırarak değişimde)
                 startInp.value = 1;
                 endInp.value = Sureler[sIdx][3];
                 updateUIAfterSuraChange();
@@ -270,13 +268,35 @@
 
         setTimeout(() => {
             drum.scrollTo({ top: (savedState.sIdx || 0) * ITEM_H });
-            // İlk açılışta kaydedilen değerleri yükle (Scroll event'i ezmeden önce)
             startInp.value = savedState.start || 1;
             endInp.value = savedState.end || Sureler[savedState.sIdx || 0][3];
             repInp.value = savedState.rep || 1;
             sureRepInp.value = savedState.sureRep || 1;
             updateUIAfterSuraChange();
         }, 300);
+
+        setupMediaSession();
+    }
+
+    // MEDIA SESSION (Kilit Ekranı Ayarları)
+    function setupMediaSession() {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => { if(!playing) toggle(); });
+            navigator.mediaSession.setActionHandler('pause', () => { if(playing) toggle(); });
+            navigator.mediaSession.setActionHandler('previoustrack', () => nav(-1));
+            navigator.mediaSession.setActionHandler('nexttrack', () => nav(1));
+        }
+    }
+
+    function updateMediaMetadata() {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: `${Sureler[sIdx][0]} - Ayet: ${cA}`,
+                artist: reciterSelect.options[reciterSelect.selectedIndex].text,
+                album: "Kur'an-ı Kerim Player Pro",
+                artwork: [{ src: 'https://via.placeholder.com/512x512/27ae60/ffffff?text=Kuran+Player', sizes: '512x512', type: 'image/png' }]
+            });
+        }
     }
 
     function toggleSettings() {
@@ -321,14 +341,12 @@
         if (cA > tA) {
             sRL--;
             if (sRL > 0) {
-                // Sure tekrar ederken değerleri RESETLEME!
                 cA = parseInt(startInp.value); rL = rM; play();
             } else {
                 if (autoNextSwitch.checked && sIdx < Sureler.length - 1) {
                     sIdx++;
                     drum.scrollTo({ top: sIdx * ITEM_H, behavior: 'smooth' });
                     setTimeout(() => {
-                        // Yeni sureye geçtiğinde 1 ve Max'a resetle
                         cA = 1; tA = Sureler[sIdx][3];
                         startInp.value = 1; endInp.value = tA;
                         sRM = parseInt(sureRepInp.value); sRL = sRM; rL = rM;
@@ -346,6 +364,9 @@
             audMain.src = getAudioUrl(sIdx, cA);
             audMain.playbackRate = speedR.value;
             await audMain.play();
+            
+            updateMediaMetadata(); // Kilit ekranı bilgisini güncelle
+            
             let nextA = (rL > 1) ? cA : cA + 1;
             if (nextA <= tA) audPreload.src = getAudioUrl(sIdx, nextA);
             status.innerHTML = `<b>${Sureler[sIdx][0]}</b><br>Ayet: ${cA}/${tA} | Tekrar: ${rM - rL + 1}/${rM}<br>Sure Tekrar: ${sRM - sRL + 1}/${sRM}`;
@@ -383,6 +404,7 @@
         clearTimeout(timer);
         pBtn.innerText = "BAŞLAT"; pBtn.style.background = "var(--accent)";
         progressBar.style.width = "0%";
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
     }
 
     function nav(step) {
