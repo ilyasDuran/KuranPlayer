@@ -64,6 +64,7 @@
             transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: -10px 0 30px rgba(0,0,0,0.2); padding: 25px;
             box-sizing: border-box; overflow-y: auto;
+            display: flex; flex-direction: column;
         }
         .settings-panel.open { right: 0; }
         .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 10px; }
@@ -80,6 +81,16 @@
         .slider-switch:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider-switch { background-color: var(--accent); }
         input:checked + .slider-switch:before { transform: translateX(24px); }
+
+        /* Sürüm Bilgisi Alanı */
+        .version-info {
+            margin-top: auto; padding: 20px 0; border-top: 1px solid rgba(0,0,0,0.1);
+            text-align: center; font-size: 0.8rem; color: #888;
+        }
+        .update-btn {
+            background: var(--accent); color: white; border: none; padding: 8px 15px;
+            border-radius: 10px; margin-top: 10px; cursor: pointer; font-weight: bold;
+        }
 
         .wave-container { display: flex; align-items: center; justify-content: center; gap: 4px; height: 40px; margin: 10px 0; }
         .wave-bar { width: 4px; height: 8px; background: var(--accent); border-radius: 4px; transition: height 0.2s; }
@@ -159,6 +170,12 @@
             <label>AYET ARASI BEKLEME: <span id="waitV">0sn</span></label>
             <input type="range" id="waitR" min="0" max="15" step="1" value="0" style="width:100%; accent-color:var(--accent);">
         </div>
+
+        <div class="version-info">
+            Sürüm: <span id="verLabel">1.0.6</span><br>
+            <span id="updateStatus">Uygulama güncel</span><br>
+            <button class="update-btn" onclick="checkForUpdate()">Şimdi Güncelle</button>
+        </div>
     </div>
 
     <div class="header">
@@ -204,6 +221,9 @@
 <audio id="audPreload" preload="auto"></audio>
 
 <script>
+    // UYGULAMA VERSİYONU
+    const APP_VERSION = "1.0.6";
+    
     const drum = document.getElementById('sureDrum'),
           audMain = document.getElementById('audMain'),
           audPreload = document.getElementById('audPreload'),
@@ -227,6 +247,8 @@
     const ITEM_H = 60;
 
     function init() {
+        document.getElementById('verLabel').innerText = APP_VERSION;
+        
         if (typeof Sureler === 'undefined') return;
         Sureler.forEach((s, idx) => {
             const d = document.createElement('div');
@@ -256,7 +278,7 @@
             });
         });
 
-        const savedState = JSON.parse(localStorage.getItem('quran_pro_v5')) || {};
+        const savedState = JSON.parse(localStorage.getItem('quran_pro_v6')) || {};
         currentReciter = localStorage.getItem('quran_reciter') || 'afasy';
         reciterSelect.value = currentReciter;
         speedR.value = savedState.speed || 1;
@@ -278,7 +300,24 @@
         setupMediaSession();
     }
 
-    // MEDIA SESSION (Kilit Ekranı Ayarları)
+    // GÜNCELLEME KONTROLÜ
+    function checkForUpdate() {
+        document.getElementById('updateStatus').innerText = "Kontrol ediliyor...";
+        
+        // Tarayıcıya sayfayı en baştan yüklemesini söyle (Önbelleği bypass et)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.update();
+                }
+            });
+        }
+        
+        setTimeout(() => {
+            window.location.reload(true); // Hard reload
+        }, 1000);
+    }
+
     function setupMediaSession() {
         if ('mediaSession' in navigator) {
             navigator.mediaSession.setActionHandler('play', () => { if(!playing) toggle(); });
@@ -364,9 +403,7 @@
             audMain.src = getAudioUrl(sIdx, cA);
             audMain.playbackRate = speedR.value;
             await audMain.play();
-            
-            updateMediaMetadata(); // Kilit ekranı bilgisini güncelle
-            
+            updateMediaMetadata();
             let nextA = (rL > 1) ? cA : cA + 1;
             if (nextA <= tA) audPreload.src = getAudioUrl(sIdx, nextA);
             status.innerHTML = `<b>${Sureler[sIdx][0]}</b><br>Ayet: ${cA}/${tA} | Tekrar: ${rM - rL + 1}/${rM}<br>Sure Tekrar: ${sRM - sRL + 1}/${sRM}`;
@@ -415,7 +452,7 @@
     }
 
     function saveState() {
-        localStorage.setItem('quran_pro_v5', JSON.stringify({
+        localStorage.setItem('quran_pro_v6', JSON.stringify({
             sIdx, speed: speedR.value, wait: waitR.value,
             start: startInp.value, end: endInp.value,
             rep: repInp.value, sureRep: sureRepInp.value,
