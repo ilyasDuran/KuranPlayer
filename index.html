@@ -2,12 +2,12 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Kur'an-ı Kerim Player Pro</title>
     
-    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#27ae60">
-    <link rel="apple-touch-icon" href="icon-192.png">
     
     <script src="kurandata.js"></script>
     
@@ -21,6 +21,7 @@
             --wrapper-h: 300px;
             --text: #2c3e50;
             --input-bg: #f1f3f5;
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         [data-theme="dark"] {
@@ -38,7 +39,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            /* dvh: Android/iOS alt barlarını otomatik hesaplar */
+            min-height: 100dvh;
             color: var(--text);
             transition: background 0.3s;
             overflow: hidden;
@@ -48,7 +50,7 @@
             background: var(--card-bg);
             width: 100%;
             max-width: 420px;
-            height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             box-shadow: 0 20px 50px rgba(0,0,0,0.3);
@@ -63,6 +65,7 @@
         /* Header */
         .header {
             padding: 15px;
+            padding-top: env(safe-area-inset-top, 15px);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -88,33 +91,12 @@
             box-sizing: border-box;
             overflow-y: auto;
         }
-
         .settings-panel.open { right: 0; }
-
-        .settings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            padding-bottom: 10px;
-        }
-
-        .overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            z-index: 250;
-            backdrop-filter: blur(2px);
-        }
-
+        .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 10px; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 250; backdrop-filter: blur(2px); }
         .setting-item { margin-bottom: 25px; }
         .setting-item label { display: block; font-size: 0.85rem; margin-bottom: 10px; font-weight: bold; opacity: 0.8; }
-        .setting-item select { 
-            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1);
-            background: var(--input-bg); color: var(--text); font-size: 1rem; outline: none;
-        }
+        .setting-item select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); background: var(--input-bg); color: var(--text); font-size: 1rem; outline: none; }
 
         /* Toggle Switch */
         .switch-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -126,15 +108,7 @@
         input:checked + .slider-switch:before { transform: translateX(24px); }
 
         /* Wave & Progress */
-        .wave-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            height: 40px;
-            margin: 10px 0;
-        }
-
+        .wave-container { display: flex; align-items: center; justify-content: center; gap: 4px; height: 40px; margin: 10px 0; }
         .wave-bar { width: 4px; height: 8px; background: var(--accent); border-radius: 4px; transition: height 0.2s; }
         .playing .wave-bar { animation: waveAnim 1s ease-in-out infinite; }
         @keyframes waveAnim { 0%, 100% { height: 8px; } 50% { height: 35px; } }
@@ -143,37 +117,28 @@
         .wave-bar:nth-child(4) { animation-delay: 0.3s; }
         .wave-bar:nth-child(5) { animation-delay: 0.4s; }
 
-        .progress-container {
-            width: 90%; height: 6px; background: var(--input-bg);
-            border-radius: 10px; margin: 0 auto 15px auto; cursor: pointer; overflow: hidden;
-        }
+        .progress-container { width: 90%; height: 6px; background: var(--input-bg); border-radius: 10px; margin: 0 auto 15px auto; cursor: pointer; overflow: hidden; }
         #progress-bar { height: 100%; width: 0%; background: var(--accent); transition: width 0.1s linear; }
 
-        /* Picker Bölümü */
-        .picker-section {
-            flex: 1; display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.02); position: relative;
-        }
-
+        /* Picker Section */
+        .picker-section { flex: 1; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.02); position: relative; }
         .drum-wrapper { position: relative; height: var(--wrapper-h); width: 100%; overflow: hidden; }
-        .drum-list {
-            height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory;
-            padding-top: 120px; padding-bottom: 120px; box-sizing: border-box;
-            scrollbar-width: none; scroll-behavior: smooth;
-        }
+        .drum-list { height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; padding-top: 120px; padding-bottom: 120px; box-sizing: border-box; scrollbar-width: none; scroll-behavior: smooth; }
         .drum-list::-webkit-scrollbar { display: none; }
         .drum-item { height: var(--item-h); line-height: var(--item-h); text-align: center; font-size: 1.2rem; color: #888; scroll-snap-align: center; cursor: pointer; }
         .drum-item.active { color: var(--accent); font-weight: 800; transform: scale(1.15); }
+        .selection-mask { position: absolute; top: 120px; left: 10%; right: 10%; height: var(--item-h); border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent); background: rgba(39, 174, 96, 0.05); pointer-events: none; border-radius: 8px; }
 
-        .selection-mask {
-            position: absolute; top: 120px; left: 10%; right: 10%; height: var(--item-h);
-            border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent);
-            background: rgba(39, 174, 96, 0.05); pointer-events: none; border-radius: 8px;
+        /* Controls Panel (Android Bar Fix) */
+        .controls-panel { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            /* env(safe-area-inset-bottom) Android ve iPhone'daki navigasyon çubuğu boşluğunu bırakır */
+            padding-bottom: calc(var(--safe-bottom) + 10px); 
+            border-top: 1px solid rgba(0,0,0,0.1); 
+            z-index: 10;
         }
-
-        /* Kontroller */
-        .controls-panel { background: var(--card-bg); padding: 20px; border-top: 1px solid rgba(0,0,0,0.1); }
-        .status-box { height: 60px; text-align: center; margin-bottom: 15px; font-size: 0.85rem; line-height: 1.4; }
+        .status-box { height: 65px; text-align: center; margin-bottom: 15px; font-size: 0.85rem; line-height: 1.4; display: flex; flex-direction: column; justify-content: center; }
 
         .inputs-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
         .input-item { background: var(--input-bg); padding: 8px; border-radius: 12px; text-align: center; }
@@ -185,11 +150,7 @@
         .btn-play { background: var(--accent); color: white; flex: 2; height: 60px; font-size: 1.1rem; }
         .btn-nav { background: var(--input-bg); color: var(--text); flex: 1; height: 60px; font-size: 1.3rem; }
 
-        #toast {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #e74c3c; color: white; padding: 10px 20px; border-radius: 20px;
-            font-size: 0.85rem; display: none; z-index: 400;
-        }
+        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #e74c3c; color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; display: none; z-index: 400; }
     </style>
 </head>
 <body data-theme="light">
@@ -203,7 +164,6 @@
             <h3 style="margin:0">Ayarlar</h3>
             <button onclick="toggleSettings()" class="header-btn">✕</button>
         </div>
-
         <div class="setting-item">
             <label>OKUYUCU (HAFIZ)</label>
             <select id="reciterSelect" onchange="changeReciter()">
@@ -214,7 +174,6 @@
                 <option value="shatree">Abu Bakr al-Shatri</option>
             </select>
         </div>
-
         <div class="setting-item">
             <div class="switch-row">
                 <label>SONRAKİ SUREYE OTOMATİK GEÇ</label>
@@ -224,12 +183,10 @@
                 </label>
             </div>
         </div>
-
         <div class="setting-item">
             <label>OKUMA HIZI: <span id="speedV">1.0x</span></label>
             <input type="range" id="speedR" min="0.5" max="2" step="0.1" value="1" style="width:100%; accent-color:var(--accent);">
         </div>
-
         <div class="setting-item">
             <label>AYET ARASI BEKLEME: <span id="waitV">0sn</span></label>
             <input type="range" id="waitR" min="0" max="15" step="1" value="0" style="width:100%; accent-color:var(--accent);">
@@ -245,11 +202,7 @@
     </div>
 
     <div id="wave-box" class="wave-container">
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
     </div>
 
     <div class="progress-container" onclick="seekAudio(event)">
@@ -265,14 +218,12 @@
 
     <div class="controls-panel">
         <div id="status" class="status-box">Yükleniyor...</div>
-
         <div class="inputs-row">
             <div class="input-item"><label>BAŞLA</label><input type="number" id="startA" value="1" min="1"></div>
             <div class="input-item"><label>BİTİŞ</label><input type="number" id="endA" value="1" min="1"></div>
             <div class="input-item"><label>AYET TEKRAR</label><input type="number" id="repA" value="1" min="1"></div>
             <div class="input-item"><label>SURE TEKRAR</label><input type="number" id="sureRepA" value="1" min="1"></div>
         </div>
-
         <div class="btn-group">
             <button class="btn btn-nav" onclick="nav(-1)">⬅</button>
             <button class="btn btn-play" id="pBtn" onclick="toggle()">BAŞLAT</button>
@@ -307,7 +258,6 @@
     let sRM = 1, sRL = 1;
     const ITEM_H = 60;
 
-    // --- Başlatma ---
     function init() {
         if (typeof Sureler === 'undefined') return;
         Sureler.forEach((s, idx) => {
@@ -326,7 +276,6 @@
             }
         });
 
-        // Event listener: Değerler 1'in altına düşerse 1 yap
         [startInp, endInp, repInp, sureRepInp].forEach(inp => {
             inp.addEventListener('change', () => {
                 if (inp.value < 1 || inp.value === "") inp.value = 1;
@@ -334,7 +283,7 @@
             });
         });
 
-        const savedState = JSON.parse(localStorage.getItem('quran_pro_state_v3')) || {};
+        const savedState = JSON.parse(localStorage.getItem('quran_pro_v4')) || {};
         currentReciter = localStorage.getItem('quran_reciter') || 'afasy';
         reciterSelect.value = currentReciter;
         speedR.value = savedState.speed || 1;
@@ -343,9 +292,7 @@
         
         document.getElementById('speedV').innerText = speedR.value + "x";
         document.getElementById('waitV').innerText = waitR.value + "sn";
-        
-        const savedTheme = localStorage.getItem('quran_theme') || 'light';
-        document.body.setAttribute('data-theme', savedTheme);
+        document.body.setAttribute('data-theme', localStorage.getItem('quran_theme') || 'light');
 
         setTimeout(() => {
             drum.scrollTo({ top: (savedState.sIdx || 0) * ITEM_H });
@@ -357,7 +304,6 @@
         }, 300);
     }
 
-    // --- Kontroller ---
     function toggleSettings() {
         const isOpen = settingsPanel.classList.toggle('open');
         overlay.style.display = isOpen ? 'block' : 'none';
@@ -397,30 +343,22 @@
 
     async function play() {
         if (!playing) return;
-
         if (cA > tA) {
             sRL--;
             if (sRL > 0) {
-                cA = parseInt(startInp.value);
-                rL = rM;
-                play();
+                cA = parseInt(startInp.value); rL = rM; play();
             } else {
                 if (autoNextSwitch.checked && sIdx < Sureler.length - 1) {
                     sIdx++;
                     drum.scrollTo({ top: sIdx * ITEM_H, behavior: 'smooth' });
                     setTimeout(() => {
-                        cA = 1;
-                        tA = Sureler[sIdx][3];
-                        startInp.value = 1;
-                        endInp.value = tA;
-                        sRM = parseInt(sureRepInp.value);
-                        sRL = sRM;
-                        rL = rM;
+                        cA = 1; tA = Sureler[sIdx][3];
+                        startInp.value = 1; endInp.value = tA;
+                        sRM = parseInt(sureRepInp.value); sRL = sRM; rL = rM;
                         play();
                     }, 800);
                 } else {
-                    status.innerHTML = "✨ <b>Tamamlandı</b>";
-                    stopPlay();
+                    status.innerHTML = "✨ <b>Tamamlandı</b>"; stopPlay();
                 }
             }
             return;
@@ -431,14 +369,11 @@
             audMain.src = getAudioUrl(sIdx, cA);
             audMain.playbackRate = speedR.value;
             await audMain.play();
-            
             let nextA = (rL > 1) ? cA : cA + 1;
             if (nextA <= tA) audPreload.src = getAudioUrl(sIdx, nextA);
-            
             status.innerHTML = `<b>${Sureler[sIdx][0]}</b><br>Ayet: ${cA}/${tA} | Tekrar: ${rM - rL + 1}/${rM}<br>Sure Tekrar: ${sRM - sRL + 1}/${sRM}`;
         } catch (e) {
-            showToast("Ses yüklenemedi.");
-            stopPlay();
+            showToast("Ses yüklenemedi."); stopPlay();
         }
     }
 
@@ -458,10 +393,7 @@
             tA = Math.max(1, parseInt(endInp.value));
             rM = Math.max(1, parseInt(repInp.value));
             sRM = Math.max(1, parseInt(sureRepInp.value));
-            
-            // Inputları düzelt (Görsel olarak da 1 yap)
             startInp.value = cA; endInp.value = tA; repInp.value = rM; sureRepInp.value = sRM;
-
             if (cA > tA) { showToast("Ayet aralığı hatalı!"); return; }
             rL = rM; sRL = sRM; playing = true;
             pBtn.innerText = "DURDUR"; pBtn.style.background = "#e67e22";
@@ -485,13 +417,12 @@
     }
 
     function saveState() {
-        const state = {
+        localStorage.setItem('quran_pro_v4', JSON.stringify({
             sIdx, speed: speedR.value, wait: waitR.value,
             start: startInp.value, end: endInp.value,
             rep: repInp.value, sureRep: sureRepInp.value,
             autoNext: autoNextSwitch.checked
-        };
-        localStorage.setItem('quran_pro_state_v3', JSON.stringify(state));
+        }));
     }
 
     function toggleTheme() {
