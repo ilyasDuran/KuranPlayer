@@ -1,5 +1,5 @@
-/* Service Worker: kuran-player-v1.2 */
-const CACHE_NAME = 'kuran-player-v1.2'; // Güncelleme yapınca burayı v1.3 yap!
+/* Service Worker: kuran-player-v1.3 */
+const CACHE_NAME = 'kuran-player-v1.3'; // Güncelleme yapınca burayı v1.4 yap!
 const urlsToCache = [
   './',
   './index.html',
@@ -42,4 +42,5 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
