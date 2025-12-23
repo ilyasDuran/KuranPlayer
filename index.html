@@ -234,6 +234,23 @@
 <audio id="audPreload" preload="auto"></audio>
 
 <script>
+
+    if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Yeni bir güncelleme bulunduğunda sayfayı otomatik yeniler
+                                window.location.reload();
+                            }
+                        });
+                    });
+                }).catch(err => console.error("Service Worker Kayıt Hatası:", err));
+            });
+        }
+    
     const drum = document.getElementById('sureDrum'),
           audMain = document.getElementById('audMain'),
           audPreload = document.getElementById('audPreload'),
@@ -373,3 +390,4 @@
 </script>
 </body>
 </html>
+
