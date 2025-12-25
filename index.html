@@ -8,6 +8,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#27ae60">
+
+    <link rel="manifest" href="manifest.json">
+
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192x192/27ae60/ffffff?text=Kuran">    
     
     <script src="kurandata.js"></script>
     
@@ -221,8 +225,17 @@
 <audio id="audPreload" preload="auto"></audio>
 
 <script>
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Servis çalışıyor.'))
+                .catch(err => console.log('Hata:', err));
+        });
+    }
+    
     // UYGULAMA VERSİYONU
-    const APP_VERSION = "1.4.0";
+    const APP_VERSION = "1.4.1";
     
     const drum = document.getElementById('sureDrum'),
           audMain = document.getElementById('audMain'),
@@ -480,4 +493,5 @@
 </script>
 </body>
 </html>
+
 
